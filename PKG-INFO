@@ -1,0 +1,12 @@
+Metadata-Version: 1.1
+Name: taft
+Version: 1.0.0
+Summary: Technical Analysis for Trading
+Home-page: http://github.com/Savahi/taft
+Author: Savahi
+Author-email: UNKNOWN
+License: MIT
+Description: UNKNOWN
+Platform: UNKNOWN
+Requires: numpy
+Requires: matplotlib
