@@ -461,7 +461,7 @@ def sma( period=10, shift=0, rates=None ):
 # Simulates trade
 def simulateTrade( shift=0, hi=None, lo=None, tp=None, sl=None, tpSlides=False, slSlides=False, side=1, price=None, type=0 ):
 	profit = None
-	closedAt = None	
+	closedAt = -1	
 
 	( hi, lo ) = _defineRates( hi=hi, lo=lo )
 	if hi == None or lo == None:

@@ -8,7 +8,13 @@ setup(
 	author = 'Savahi',
 	author_email = 'sh@tradingene.ru',
 	license = 'MIT',
+	classifiers=[
+	    'Development Status :: 3 - Alpha',
+	    'Intended Audience :: Developers',
+	],	
 	packages = ['taft'],
 	keywords = 'technical analysis trading',
-	requires = ['numpy'],
+	install_requires = ['numpy'],
 	zip_safe = False )
+
+
