@@ -1,5 +1,6 @@
 TAFT: Technical Analysis tools For Trading 
 ==========================================
+version 1.0.2
 
 > **Important notice**:
 > Quotes and volumes (numpy-arrays given as arguments to the functions listed below) 
