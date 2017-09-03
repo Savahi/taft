@@ -480,6 +480,8 @@ def simulateTrade( shift=0, hi=None, lo=None, tp=None, sl=None, tpSlides=False, 
 	hiLessLo = np.subtract( hi, lo )
 	hiLessLoMean = np.mean( hiLessLo )
 
+	closePrice = None
+
 	if side == 1:
 		tpPrice = price + tp
 		slPrice = price - sl
@@ -492,10 +494,12 @@ def simulateTrade( shift=0, hi=None, lo=None, tp=None, sl=None, tpSlides=False, 
 			if hi[i] >= tpPrice:
 				profit = tpPrice - price
 				closedAt = i
+				closePrice = tpPrice
 				break
 			if lo[i] <= slPrice:
 				profit = slPrice - price
 				closedAt = i
+				closePrice = slPrice
 				break
 			if tpSlides == True:
 				if lo[i] + tp < tpPrice:
@@ -507,10 +511,12 @@ def simulateTrade( shift=0, hi=None, lo=None, tp=None, sl=None, tpSlides=False, 
 			if hi[i] >= slPrice:
 				profit = price - slPrice
 				closedAt = i
+				closePrice = slPrice				
 				break
 			if lo[i] <= tpPrice:
 				profit = price - tpPrice
 				closedAt = i
+				closePrice = tpPrice				
 				break
 			if tpSlides:
 				if hi[i] - tp > tpPrice:
@@ -519,7 +525,7 @@ def simulateTrade( shift=0, hi=None, lo=None, tp=None, sl=None, tpSlides=False, 
 				if lo[i] + sl < slPrice:
 					slPrice = lo[i] + sl
 
-	return { 'profit': profit, 'closedAt':closedAt }
+	return { 'profit': profit, 'closedAt':closedAt, 'closePrice':closePrice }
 # end of simulateTrade
 
 def normalize( x ):
@@ -529,3 +535,67 @@ def normalize( x ):
 		x[i] = (x[i] - xMean) / xStd
 
 # end of normalize
+
+
+def readFinam( fileName ):
+	readError = False
+	fileOpened = False
+	
+	linesRead = 0
+	linesSkipped = 0
+
+	from datetime import datetime 
+
+	op = []
+	hi = []
+	lo = []
+	cl = []
+	vol = []
+	dtm = []
+
+	try:
+		fileHandle = open(fileName, "r")
+		fileOpened = True
+
+		firstLine = True
+		for line in fileHandle:
+
+			if firstLine:
+				firstLine = False
+				linesSkipped += 1
+				continue
+
+			lineSplitted = line.split( "," )
+			if len(lineSplitted) < 9:
+				linesSkipped += 1
+				continue
+
+			strDate = lineSplitted[2]
+			strTime = lineSplitted[3]
+			dtm.append( datetime.strptime(strDate + " " + strTime, '%Y%m%d %H%M%S') )
+
+			op.append( float( lineSplitted[4] ) )
+			hi.append( float( lineSplitted[5] ) )
+			lo.append( float( lineSplitted[6] ) )
+			cl.append( float( lineSplitted[7] ) )
+			vol.append( float( lineSplitted[8].rstrip() ) )
+
+			linesRead += 1	
+	except IOError:
+		readError = True
+	
+	if fileOpened:
+		fileHandle.close()
+
+	if readError:
+		return( None )
+
+	op = np.array( op[::-1], dtype='float' )
+	hi = np.array( hi[::-1], dtype='float' )
+	lo = np.array( lo[::-1], dtype='float' )
+	cl = np.array( cl[::-1], dtype='float' )
+	vol = np.array( vol[::-1], dtype='float' )
+	dtm = dtm[::-1]
+
+	return { 'op':op, 'hi':hi, 'lo':lo, 'cl':cl, 'vol':vol, 'dtm':dtm, 'length':linesRead, 'skipped':linesSkipped }
+# end of readFinam
