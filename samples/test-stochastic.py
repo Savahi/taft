@@ -22,7 +22,7 @@ stochK = np.zeros( shape=ratesLen, dtype='float' )
 stochD = np.zeros( shape=ratesLen, dtype='float' )
 for i in range( ratesLen-1, -1, -1 ):
 	ret = taft.stochastic( shift=i, hi=hi, lo=lo, cl=cl )
-	if ret != None:
+	if ret is not None:
 		stochK[i] = ret['K']
 		stochD[i] = ret['D']
 

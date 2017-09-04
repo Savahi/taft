@@ -152,7 +152,7 @@ def sma( period=10, shift=0, rates=None ):
 	Returns (float) - the SMA value, 'None' if failed 
 
 
-Simulation and Analysis
+Simulation and Research
 -----------------------
 
 ### simulateTrade ###

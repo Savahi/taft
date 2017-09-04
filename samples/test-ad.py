@@ -35,7 +35,7 @@ for i in range( ratesLen-1, -1, -1 ):
 
 for i in range( ratesLen-1,-1,-1 ):
 	prefix = str(i) + ": " 
-	if ad[i] == None:
+	if ad[i] is None:
 		print prefix + "N/A"
 	else:
 		print prefix + "close=" + str(cl[i]) + ", AD=" + str(ad[i])

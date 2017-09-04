@@ -59,7 +59,7 @@ while i >= 0:
 	# side: '1' for simulationg LONG trade and '-1' for SHORT trade
 	# price: the rate value the trade is opened at   
 	ret = taft.simulateTrade( shift=i-1, hi=ratesHigh, lo=ratesLow, tp=tp, sl=sl, side=1, price=ratesClose[i] )
-	if ret == None: # Returns 'None' if an error occurs  
+	if ret is None: # Returns 'None' if an error occurs  
 		break
 	if ret['closedAt'] == -1: # ret['closedAt'] receives '-1' when the latest rate is reached  
 		break

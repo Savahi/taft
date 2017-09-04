@@ -14,7 +14,7 @@ for i in range( ratesLen ):
 
 for i in range( ratesLen-1,-1,-1 ):
 	prefix = str(i) + ": " 
-	if bbands[i] == None:
+	if bbands[i] is None:
 		print prefix + "N/A"
 	else:
 		print prefix + "rate=" + str(rates[i]) + ", middle=" + str(bbands[i]['middle']) + ", std=" + str(bbands[i]['std']) + ", upper=" + str(bbands[i]['upper'])  + ", lower=" + str(bbands[i]['lower'])

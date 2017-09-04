@@ -25,13 +25,13 @@ for i in range( ratesLen ):
 prev = None
 for i in range( ratesLen-1, -1, -1 ):
 	adx[i] = taft.adx( shift=i, hi=hi, lo=lo, cl=cl, prev=prev )
-	if adx[i] == None:
+	if adx[i] is None:
 		continue
 	prev = adx[i]
 
 for i in range( ratesLen-1,-1,-1 ):
 	prefix = str(i) + ": " 
-	if adx[i] == None:
+	if adx[i] is None:
 		print prefix + "N/A"
 	else:
 		print prefix + "close=" + str(cl[i]) + ", +DM14=" + str(adx[i]['+DMsm']) + ", -DM14=" + str(adx[i]['-DMsm']) + ", +DI=" + str(adx[i]['+DI']) + ", -DI=" + str(adx[i]['-DI']) + ", dx=" + str(adx[i]['dx']) + ", ADX=" + str(adx[i]['adx'])

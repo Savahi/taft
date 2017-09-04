@@ -22,7 +22,7 @@ atr = np.zeros( shape=ratesLen, dtype='float' )
 prev = None
 for i in range( ratesLen-1, -1, -1 ):
 	ret = taft.atr( shift=i, hi=hi, lo=lo, cl=cl, prev=prev )
-	if ret != None:
+	if ret is not None:
 		atr[i] = ret['atr']
 	prev = ret
 

@@ -2,8 +2,8 @@ from setuptools import setup
 
 setup( 
 	name = 'taft',
-	version = '1.0.4',
-	description = 'Technical Analysis For Trading',
+	version = '1.0.5',
+	description = 'Technical analysis and research&simulation framework for algorithmic traders',
 	url = 'http://github.com/Savahi/taft',
 	author = 'Savahi',
 	author_email = 'sh@tradingene.ru',

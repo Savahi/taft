@@ -35,27 +35,27 @@ def _defineRates( op=[], hi=[], lo=[], cl=[], vo=[] ):
 	global _volumes
 
 	ret = ()
-	if op == None:
+	if op is None:
 		op = _open
 		ret = ret + (op,)
 	elif len(op) > 0:
 		ret = ret + (op,)
-	if hi == None:
+	if hi is None:
 		hi = _high
 		ret = ret + (hi,)
 	elif len(hi):
 		ret = ret + (hi,)
-	if lo == None:
+	if lo is None:
 		lo = _low
 		ret = ret + (lo,)
 	elif len(lo) > 0:
 		ret = ret + (lo,)
-	if cl == None:
+	if cl is None:
 		cl = _close
 		ret = ret + (cl,)
 	elif len(cl) > 0:
 		ret = ret + (cl,)
-	if vo == None:
+	if vo is None:
 		vo = _volumes
 		ret = ret + (vo,)
 	elif len(vo) > 0:
@@ -67,11 +67,11 @@ def _defineRates( op=[], hi=[], lo=[], cl=[], vo=[] ):
 # AD-indicator
 def ad( period=1, shift=0, hi=None, lo=None, cl=None, vo=None, prev=None ):
 	(hi, lo, cl, vo) = _defineRates( hi=hi, lo=lo, cl=cl, vo=vo )
-	if hi == None or lo == None or cl == None or vo == None:
+	if hi is None or lo is None or cl is None or vo is None:
 		return None
 
 	adValue = None
-	if prev != None:
+	if prev is not None:
 		if shift < len(cl):
 			adValue = prev + ad1( hi[shift], lo[shift], cl[shift], vo[shift] ) 
 	else:
@@ -97,10 +97,10 @@ def ad1( hi,lo,cl,vo ):
 # ADX-indicator
 def adx( period=14, shift=0, hi=None, lo=None, cl=None, prev=None ):
 	(hi, lo, cl) = _defineRates( hi=hi, lo=lo, cl=cl )
-	if hi == None or lo == None or cl == None:
+	if hi is None or lo is None or cl is None:
 		return None
 
-	if prev != None:
+	if prev is not None:
 		if shift+1 >= len(cl):
 			return None
 
@@ -162,15 +162,15 @@ def adx( period=14, shift=0, hi=None, lo=None, cl=None, prev=None ):
 		smoothedMinusDM = None	
 		for i in range( shift + period-1, shift-1, -1 ):
 			index = i - shift
-			if smoothedTr == None:
+			if smoothedTr is None:
 				smoothedTr = np.sum( tr[index:index+period] )
 			else:
 				smoothedTr = smoothedTr - smoothedTr / period + tr[index]
-			if smoothedPlusDM == None:
+			if smoothedPlusDM is None:
 				smoothedPlusDM = np.sum( plusDM[index:index+period] )
 			else:
 				smoothedPlusDM = smoothedPlusDM - smoothedPlusDM / period + plusDM[index]
-			if smoothedMinusDM == None:
+			if smoothedMinusDM is None:
 				smoothedMinusDM = np.sum( minusDM[index:index+period] )
 			else:
 				smoothedMinusDM = smoothedMinusDM - smoothedMinusDM / period + minusDM[index]
@@ -194,17 +194,17 @@ def adx( period=14, shift=0, hi=None, lo=None, cl=None, prev=None ):
 # ATR - Average True Range
 def atr( period=14, shift=0, hi=None, lo=None, cl=None, prev=None ):
 	(hi, lo, cl) = _defineRates( hi=hi, lo=lo, cl=cl )
-	if hi == None or lo == None or cl == None:
+	if hi is None or lo is None or cl is None:
 		return None
 
 	trValue = None
 	atrValue = None
-	if prev != None:
-		if prev['atr'] != None:
+	if prev is not None:
+		if prev['atr'] is not None:
 			if shift < len(cl):
 				trValue = tr( hi, lo, cl, shift )
 				atrValue = (prev['atr'] * (period-1) + trValue) / period	
-	if atrValue == None:
+	if atrValue is None:
 		if shift + period - 1 < len(cl):
 			trValues = np.empty( shape=period, dtype='float' )
 			for i in range( shift+period-1, shift-1, -1 ):
@@ -230,7 +230,7 @@ def tr( hi, lo, cl, shift ):
 # Bollinger Bands
 def bollinger( period=20, shift=0, nStds = 2.0, rates=None ):
 	(rates,) = _defineRates( cl=rates )
-	if rates == None:
+	if rates is None:
 		return None
 
 	en = shift + period
@@ -247,7 +247,7 @@ def bollinger( period=20, shift=0, nStds = 2.0, rates=None ):
 # CCI indicator
 def cci( period=20, shift=0, hi=None, lo=None, cl=None, cciConst=0.015 ):
 	(hi, lo, cl) = _defineRates( hi=hi, lo=lo, cl=cl )
-	if hi == None or lo == None or cl == None:
+	if hi is None or lo is None or cl is None:
 		return None
 
 	if shift + period - 1 >= len(cl):
@@ -273,20 +273,20 @@ def cci( period=20, shift=0, hi=None, lo=None, cl=None, cciConst=0.015 ):
 
 
 # EMA - Exponential Moving Average
-def ema( period=10, shift=0, alpha=None, rates=None, prev=None ):			
+def ema( period=10, shift=0, alpha=None, rates=None, prev=None, history=0 ):			
 	global _close
-	if rates == None:
+	if rates is None:
 		rates = _close
-	if rates == None:
+	if rates is None:
 		return None
 
-	if alpha == None:
+	if alpha is None:
 		alpha = 2.0 / (period + 1.0)
 
 	emaValue = None
 
 	# Previously calculated ema is given 
-	if prev != None:
+	if prev is not None:
 		if shift < len(rates):
 			emaValue = (rates[shift] - prev) * alpha + prev
 	else:
@@ -307,9 +307,9 @@ def ema( period=10, shift=0, alpha=None, rates=None, prev=None ):
 # MACD - Moving Average Convergence/Divergence Oscillator
 def macd( periodFast=12, periodSlow=26, periodSignal=9, shift=0, rates=None ):
 	global _close
-	if rates == None:
+	if rates is None:
 		rates = _close
-	if rates == None:
+	if rates is None:
 		return None
 
 	st = shift + periodSlow + periodSignal - 1
@@ -340,7 +340,7 @@ def smma( period, shift=0, rates=None ):
 # Stochastic (FSI) - Stochastic Oscillator
 def stochastic( periodK=14, periodD=3, shift=0, hi=None, lo=None, cl=None ):
 	(hi, lo, cl) = _defineRates( hi=hi, lo=lo, cl=cl )
-	if hi == None or lo == None or cl == None:
+	if hi is None or lo is None or cl is None:
 		return None
 
 	ratesLen = len(cl)
@@ -348,14 +348,14 @@ def stochastic( periodK=14, periodD=3, shift=0, hi=None, lo=None, cl=None ):
 		if shift + periodK - 1 >= ratesLen: # The 'K' value is also impossible to calculate?
 			return None
 		valueK = stochasticK( hi, lo, cl, shift, shift+periodK-1 ) # Calculating the 'K' value only
-		if valueK == None:
+		if valueK is None:
 			return None
 		return( { 'K':valueK, 'D':None } )
 
 	valuesK = np.empty( shape=periodD, dtype='float' )
 	for i in range( periodD ):
 		valueK = stochasticK( hi, lo, cl, shift+i, shift+i+periodK-1 )
-		if( valueK == None ):
+		if valueK is None:
 			return None
 		valuesK[i] = valueK
 
@@ -381,7 +381,7 @@ def stochasticK( hi, lo, cl, st, en ):
 # ROC - Rate Of Change indicator
 def roc( period=12, shift=0, rates=None ):
 	(rates,) = _defineRates(cl=rates)
-	if rates == None:
+	if rates is None:
 		return None
 
 	nPeriodsAgoIndex = shift + period 
@@ -397,16 +397,16 @@ def roc( period=12, shift=0, rates=None ):
 # RSI - Relative Strength Index
 def rsi( period=14, shift=0, rates=None, prev = None ):
 	(rates,) = _defineRates( cl=rates )
-	if rates == None:
+	if rates is None:
 		return None
 
 	averageGainPrev = None
 	averageLossPrev = None
-	if prev != None:
+	if prev is not None:
 		averageGainPrev = prev['averageGain']
 		averageLossPrev = prev['averageLoss']
 
-	if averageGainPrev != None and averageLossPrev != None:
+	if (averageGainPrev is not None) and (averageLossPrev is not None):
 		if shift + 1 >= len(rates):
 			return None
 		difference = rates[shift] - rates[shift+1]
@@ -447,7 +447,7 @@ def rsi( period=14, shift=0, rates=None, prev = None ):
 # SMA - Simple Moving Average
 def sma( period=10, shift=0, rates=None ):
 	(rates,) = _defineRates( cl=rates )
-	if rates == None:
+	if rates is None:
 		return None
 	
 	endIndex = shift + period
@@ -464,17 +464,17 @@ def simulateTrade( shift=0, hi=None, lo=None, tp=None, sl=None, tpSlides=False, 
 	closedAt = -1	
 
 	( hi, lo ) = _defineRates( hi=hi, lo=lo )
-	if hi == None or lo == None:
+	if hi is None or lo is None:
 		return None
 
 	hiMax = np.max(hi)
 	loMin = np.min(lo)
-	if tp == None:
+	if tp is None:
 		tp = (hiMax - loMin)*100.0
-	if sl == None:
+	if sl is None:
 		sl = (hiMax - loMin)*100.0
 
-	if price == None:
+	if price is None:
 		price = lo[shift] + (hi[shift] - lo[shift]) / 2.0
 
 	hiLessLo = np.subtract( hi, lo )

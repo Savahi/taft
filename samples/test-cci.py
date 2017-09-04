@@ -29,7 +29,7 @@ meanD = np.zeros( shape=ratesLen, dtype='float' )
 prev = None
 for i in range( ratesLen-1, -1, -1 ):
 	ret = taft.cci( shift=i, hi=hi, lo=lo, cl=cl )
-	if ret != None:
+	if ret is not None:
 		cci[i] = ret['cci']
 		meanTP[i] = ret['meanTypicalPrice']
 		meanD[i] = ret['meanDeviation']
