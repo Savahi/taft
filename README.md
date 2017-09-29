@@ -185,10 +185,14 @@ Utilities
 ### normalize ###
 Normalizes the values of an array with the following formula: x[i] = (x[i] - <mean-of-x>) / <standard-deviation-of-x>
 ~~~
-def normalize( x ):
+def normalize( x, meanX=None, stdX=None, normInterval=[0,-1] ):
 ~~~
 	x (numpy array, float) - the array to be normalized 
-
+	meanX (float) - the mean value to normalize with (if "None" the value will be calculated)
+	stdX (float) - the std value to normalize with (if "None" the value will be calculated)
+	normInterval (list of length 2, int) - the starting and the ending indexes inside the 'x' array.
+	    The indexes denote a subarray used to calculate 'meanX' and 'stdX'.
+	    if normInterval[1]==-1, the whole array is used. 
 	Returns: nothing
 
 ### readFinam ###
