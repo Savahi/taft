@@ -458,6 +458,44 @@ def sma( period=10, shift=0, rates=None ):
 # end of sma
 
 
+def williams( period=14, shift=0, hi=None, lo=None, cl=None ):
+	(hi, lo, cl) = _defineRates( hi=hi, lo=lo, cl=cl )
+	if hi is None or lo is None or cl is None:
+		return None
+
+	endIndex = shift + period
+	if endIndex > len(cl):
+		return None
+
+	lowestLow = np.min( lo[shift:endIndex] )
+	highestHigh = np.max( hi[shift:endIndex] )
+	diff = highestHigh - lowestLow
+	if not (diff > 0):
+		return None
+
+	return (highestHigh-cl[shift]) / diff * (-100.0)
+# end of williams
+
+
+def awesome( period1=5, period2=34, shift=0, hi=None, lo=None ):
+	(hi, lo) = _defineRates( hi=hi, lo=lo )
+	if hi is None or lo is None:
+		return None
+
+	endIndex = shift + period1
+	if endIndex > len(hi):
+		return None
+	v1 = (hi[shift:endIndex] + lo[shift:endIndex])/2.0
+	
+	endIndex = shift + period2
+	if endIndex > len(hi):
+		return None
+	v2 = (hi[shift:endIndex] + lo[shift:endIndex])/2.0
+
+	return (v1-v2)
+# end of awesome
+
+
 # Simulates trade
 def simulateTrade( shift=0, hi=None, lo=None, tp=None, sl=None, tpSlides=False, slSlides=False, side=1, price=None, type=0 ):
 	profit = None
@@ -546,6 +584,10 @@ def normalize( x, meanX=None, stdX=None, normInterval=[0,-1] ):
 		x[i] = (x[i] - meanX) / stdX
 	return lenX, meanX, stdX
 # end of normalize
+
+
+def readFile( fileName ):
+	return readFinam( fileName )
 
 
 def readFinam( fileName ):

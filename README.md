@@ -2,6 +2,8 @@ TAFT: Technical Analysis tools For Trading
 ==========================================
 version 1.0.2
 
+Related documents: [data](data.md)   
+
 > **Important notice**:
 > Quotes and volumes (numpy-arrays given as arguments to the functions listed below) 
 > are required to be indexed so that the most **old** value has the **biggest** index

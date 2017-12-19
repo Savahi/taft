@@ -3,5 +3,5 @@ include LICENSE.txt
 
 include README.rst
 
-# Include the data files
+# Include samples files
 recursive-include samples/*
