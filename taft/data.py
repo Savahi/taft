@@ -1,9 +1,9 @@
 import os
+import numpy as np
 from datetime import datetime 
 from datetime import timedelta
-import numpy as np
 import cPickle as pickle
-import taft
+import __init__ as taft
 
 '''
 Allowed tickers so far: BTCUSD, LTCUSD, EURUSD
@@ -213,7 +213,7 @@ def reframeRates( rates, timeFrame ):
 	cl = np.array( cl[::-1], dtype=np.float )
 	vol = np.array( vol[::-1], dtype=np.float )
 
-	return { 'dtm':dtm, 'op':op, 'hi':hi, 'lo':lo, 'cl':cl, 'vol':vol }
+	return { 'dtm':dtm, 'op':op, 'hi':hi, 'lo':lo, 'cl':cl, 'vol':vol, 'length':len(dtm) }
 
 # end of def reFrameRates
 
@@ -226,7 +226,7 @@ def reframeCandle( rates, startIndex, timeFrame ):
 			excess = dtmOfCandle.minute % timeFrame
 		elif timeFrame < 1440:
 			excess = dtmOfCandle.minute + (dtmOfCandle.hour % (timeFrame/60)) * 60
-		elif timeFrame == 1440:
+		else:
 			excess = dtmOfCandle.minute + dtmOfCandle.hour * 60
 
 		if excess > 0:
@@ -243,7 +243,6 @@ def reframeCandle( rates, startIndex, timeFrame ):
 	excess, beginningOfTimeFrame = getBeginningOfTimeFrame( dtmOfCandle, timeFrame )
 	if excess > 0:
 		dtmOfCandle = beginningOfTimeFrame
-
 	opOfCandle = rates['op'][startIndex]
 	hiOfCandle = rates['hi'][startIndex]
 	loOfCandle = rates['lo'][startIndex]
@@ -264,8 +263,9 @@ def reframeCandle( rates, startIndex, timeFrame ):
 		volOfCandle += rates['vol'][i]
 
 		timeCounter += 1
-		if timeCounter == timeFrame:
-			break
+		#if timeCounter == timeFrame:
+		#	print "breaking on time Counter (" + str(timeCounter) + ")" + str(rates['dtm'][i])
+		#	break
 
 	return (startIndex - timeCounter), {'dtm':dtmOfCandle,'op':opOfCandle,'hi':hiOfCandle,'lo':loOfCandle,'cl':clOfCandle,'vol':volOfCandle}
 # end of def reFrameCandle
@@ -298,10 +298,11 @@ def prepareData( rates, calcInp, calcInpParams, calcOut, calcOutParams, normaliz
 		precalculated = precalcData( rates, calcOutParams )
 		calcOutParams['precalculated'] = precalculated
 
+	nnDTM = []
 	nnInputs = []
 	nnLabels = []
 	nnProfit = []
-	for i in range(length-1,0,-1):
+	for i in range(1,length):
 		# Inputs
 		pastRates = { 'op': op[i:], 'hi':hi[i:], 'lo':lo[i:], 'cl':cl[i:], 'vol':vol[i:], 'dtm':dtm[i:] }
 		futureRates = { 'op': op[i-1::-1], 'hi':hi[i-1::-1], 'lo':lo[i-1::-1], 'cl':cl[i-1::-1], 'vol':vol[i-1::-1], 'dtm':dtm[i-1::-1] }
@@ -318,6 +319,7 @@ def prepareData( rates, calcInp, calcInpParams, calcOut, calcOutParams, normaliz
 		nnInputs.append( inputs )
 		nnLabels.append( label )
 		nnProfit.append( profit )
+		nnDTM.append( dtm[i-1] )
 
 	if len(nnInputs) == 0:
 		return retErr
@@ -358,13 +360,15 @@ def prepareData( rates, calcInp, calcInpParams, calcOut, calcOutParams, normaliz
 
 	if detachTest is None:
 		retval1 = { 'inputs': nnInputs, 'labels': nnLabels, 'profit': nnProfit, 
-			'numSamples':numSamples, 'numFeatures':numFeatures, 'numLabels':numLabels, 'mean':nnMean, 'std':nnStd }	
+			'numSamples':numSamples, 'numFeatures':numFeatures, 'numLabels':numLabels, 'mean':nnMean, 'std':nnStd, 'dtm':nnDTM }	
 		retval2 = None
 	else:
 		retval1 = { 'inputs': nnInputs[detachStart:], 'labels': nnLabels[detachStart:], 'profit': nnProfit[detachStart:], 
-			'numSamples':numSamples-detachStart, 'numFeatures':numFeatures, 'numLabels':numLabels, 'mean':nnMean, 'std':nnStd }	
+			'numSamples':numSamples-detachStart, 'numFeatures':numFeatures, 'numLabels':numLabels, 
+			'mean':nnMean, 'std':nnStd, 'dtm':nnDTM[detachStart:] }	
 		retval2 = { 'inputs': nnInputs[:detachStart], 'labels': nnLabels[:detachStart], 'profit': nnProfit[:detachStart], 
-			'numSamples':detachStart, 'numFeatures':numFeatures, 'numLabels':numLabels, 'mean':nnMean, 'std':nnStd }	
+			'numSamples':detachStart, 'numFeatures':numFeatures, 'numLabels':numLabels, 
+			'mean':nnMean, 'std':nnStd, 'dtm':nnDTM[:detachStart] }	
 
 	return( retval1, retval2 )
 # end of def prepareData
@@ -444,44 +448,9 @@ def loadModel( fileName ):
 # end of loadModel()
 
 
-def calcPastROCs( pastRates, params ):
-
-	step0 = params['step0']
-	stepSize = params['stepSize']
-	stepMax = params['stepMax']
-	if 'stepSizeInc' in params:
-		stepSizeInc = params['stepSizeInc']
-	else:
-		stepSizeInc = 0
-
-	inputs = []
-
-	index = step0
-	curStep = 0
-	while( curStep < stepMax ):
-		#ind = taft.roc( index, rates=pastRates['hi'] )
-		#if ind == None:
-		#	return None
-		#inputs.append(ind/100.0)
-		#ind = taft.roc( index, rates=pastRates['lo'] )
-		#if ind == None:
-		#	return None
-		#inputs.append(ind/100.0)
-		ind = taft.roc( index, rates=pastRates['cl'] )
-		if ind == None:
-			return None
-		inputs.append(ind/100.0)
-
-		index += stepSize + stepSizeInc*curStep
-		curStep += 1
-
-	return inputs
-# end of def
-
-
 def precalcFutureReturn( rates, params ):
 	numLabels = params['numLabels']
-	lookAhead = params['lookAhead']
+	lookAhead = params['lookAhead']-1
 
 	if lookAhead > 0:
 		op = rates['op'][lookAhead:]
@@ -499,13 +468,22 @@ def precalcFutureReturn( rates, params ):
 		index = int( (i+1) * float(lenDiffs) / float(numLabels) + 0.5 )
 		ret['splitter' + str(i)] = sortedDiffs[index]
 
+	mean = np.mean( diffs )
+	std = np.std( diffs )
+	ret['mean'] = mean
+	ret['std'] = std
+	meanAbs = np.mean( np.abs(diffs) )
+	stdAbs = np.std( np.abs(diffs) )
+	ret['meanAbs'] = meanAbs
+	ret['stdAbs'] = stdAbs
+
 	return ret
 # end of def
 
 
 def calcFutureReturn( rates, params ):
 	numLabels = params['numLabels']
-	lookAhead = params['lookAhead']
+	lookAhead = params['lookAhead']-1
 
 	if lookAhead >= len( rates['cl'] ):
 		return None
@@ -521,4 +499,154 @@ def calcFutureReturn( rates, params ):
 		label = numLabels-1
 
 	return label, profit
+# end of def
+
+
+
+def calcFutureNHNL( rates, params ):
+	numLabels = params['numLabels']
+	lookAhead = params['lookAhead']
+
+	if lookAhead >= len( rates['cl'] ) or lookAhead < 2:
+		return None
+
+	# Calcualting NH/NL ratio
+	hi = rates['hi'][:lookAhead]
+	lo = rates['lo'][:lookAhead]
+	v1 = taft.pNextHigher( lookAhead, hi[::-1] )
+	v2 = taft.pNextLower( lookAhead, lo[::-1] )
+	if v1 is None or v2 is None:
+		return None
+
+	vSum = v1 + v2
+	if not( vSum > 0 ):
+		ratio = 0.0
+	else:
+		ratio = (v1-v2) / vSum
+
+	# Getting the scale to label the ratio value
+	if not 'lookAheadScale' in params:
+		scale = calcScale( numLabels )
+		params['lookAheadScale'] = scale
+	else:
+		scale = params['lookAheadScale']
+
+	# Labeling the ratio value 
+	label = -1
+	for l in range( numLabels-1 ):
+		if ratio < scale[l]:
+			label=l
+			break
+	if label == -1:
+		label = numLabels-1
+
+	profit = rates['cl'][lookAhead-1] - rates['op'][0]
+
+	return label, profit
+# end of def
+
+
+def calcPastROCs( pastRates, params ):
+	step0 = params['step0']
+	stepSize = params['stepSize']
+	stepMax = params['stepMax']
+	if 'stepSizeInc' in params:
+		stepSizeInc = params['stepSizeInc']
+	else:
+		stepSizeInc = 0
+
+	inputs = []
+
+	period = step0
+	curStep = 0
+	while( curStep < stepMax ):
+
+		if period == step0:
+			ind = taft.roc( period=period, rates=pastRates['cl'] )
+			if ind == None:
+				return None
+			inputs.append(ind/100.0)
+
+		ind = taft.roc( period=period, rates=pastRates['hi'] )
+		if ind == None:
+			return None
+		inputs.append(ind/100.0)
+
+		ind = taft.roc( period=period, rates=pastRates['lo'] )
+		if ind == None:
+			return None
+		inputs.append(ind/100.0)
+
+		period += stepSize + stepSizeInc*curStep
+		curStep += 1
+
+	return inputs
+# end of def
+
+def calcPastSTOs( pastRates, params ):
+	step0 = params['step0']
+	stepSize = params['stepSize']
+	stepMax = params['stepMax']
+	if 'stepSizeInc' in params:
+		stepSizeInc = params['stepSizeInc']
+	else:
+		stepSizeInc = 0
+
+	inputs = []
+
+	period = step0
+	curStep = 0
+	while( curStep < stepMax ):
+		ret = stochastic( periodK=period, hi=pastRates['hi'], lo=pastRates['lo'], cl=pastRates['cl'] )
+		if ret is None:
+			return None
+		ind = ret['K']
+		inputs.append(ind/100.0)
+
+		period += stepSize + stepSizeInc*curStep
+		curStep += 1
+
+	return inputs
+# end of def
+
+
+def calcPastNHNLs( pastRates, params ):
+
+	step0 = params['step0']
+	stepSize = params['stepSize']
+	stepMax = params['stepMax']
+	if 'stepSizeInc' in params:
+		stepSizeInc = params['stepSizeInc']
+	else:
+		stepSizeInc = 0
+
+	inputs = []
+
+	period = step0
+	curStep = 0
+	while( curStep < stepMax ):
+
+		ind = taft.pNextHigher( period, pastRates['hi'] )
+		if ind == None:
+			return None
+		inputs.append( ind )
+
+		ind = taft.pNextLower( period, pastRates['lo'] )
+		if ind == None:
+			return None
+		inputs.append( ind )
+
+		period += stepSize + stepSizeInc*curStep
+		curStep += 1
+
+	return inputs
+# end of def
+
+
+def calcScale( numLabels ):
+	scale = []
+	splitter = 2.0 / float(numLabels)
+	for i in range(1,numLabels):
+		scale.append( -1.0 + splitter*float(i) )
+	return scale
 # end of def

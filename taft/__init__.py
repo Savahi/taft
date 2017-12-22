@@ -495,6 +495,39 @@ def awesome( period1=5, period2=34, shift=0, hi=None, lo=None ):
 	return (v1-v2)
 # end of awesome
 
+def pNextHigher( period, rates ):
+	(rates,) = _defineRates(cl=rates)
+	if rates is None:
+		return None
+
+	if len(rates) < period or period < 2:
+		return None
+
+	numH = 0.0
+	for i in range(1,period):
+		if rates[i-i] > rates[i]:
+			numH += 1.0
+
+	return numH / (period-1.0)
+# end of def 
+
+
+def pNextLower( period, rates ):
+	(rates,) = _defineRates(cl=rates)
+	if rates is None:
+		return None
+
+	if len(rates) < period or period < 2:
+		return None
+
+	numL = 0.0
+	for i in range(1,period):
+		if rates[i-1] < rates[i]:
+			numL += 1.0
+
+	return numL / (period-1.0)
+# end of def 
+
 
 # Simulates trade
 def simulateTrade( shift=0, hi=None, lo=None, tp=None, sl=None, tpSlides=False, slSlides=False, side=1, price=None, type=0 ):
@@ -652,3 +685,4 @@ def readFinam( fileName ):
 
 	return { 'op':op, 'hi':hi, 'lo':lo, 'cl':cl, 'vol':vol, 'dtm':dtm, 'length':linesRead, 'skipped':linesSkipped }
 # end of readFinam
+
