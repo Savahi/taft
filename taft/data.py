@@ -5,10 +5,91 @@ from datetime import timedelta
 import cPickle as pickle
 import __init__ as taft
 
+def loadFinam( fileName, startYear=None, endYear=None, startMonth=1, endMonth=12, startDay=1, endDay=None ):
+	readError = False
+	fileOpened = False
+	
+	linesRead = 0
+	linesSkipped = 0
+
+	if endDay is None:
+		endDay = getEndDayOfMonth( endMonth )
+	if startYear is None:
+		startYear = 1900
+	if endYear is None:
+		endYear = 2200
+
+	from datetime import datetime 
+
+	startDate = datetime.strptime( str(startYear) + ":" + str(startMonth) + ":" + str(startDay), "%Y:%m:%d" )
+	endDate = datetime.strptime( str(endYear) + ":" + str(endMonth) + ":" + str(endDay), "%Y:%m:%d" )
+
+	op = []
+	hi = []
+	lo = []
+	cl = []
+	vol = []
+	dtm = []
+
+	try:
+		fileHandle = open(fileName, "r")
+		fileOpened = True
+
+		firstLine = True
+		for line in fileHandle:
+
+			if firstLine:
+				firstLine = False
+				linesSkipped += 1
+				continue
+
+			lineSplitted = line.split( "," )
+			if len(lineSplitted) < 9:
+				linesSkipped += 1
+				continue
+
+			strDate = lineSplitted[2]
+			strTime = lineSplitted[3]
+
+			dateTime = datetime.strptime( strDate + " " + strTime, '%Y%m%d %H%M%S' )
+
+			if dateTime < startDate:
+				continue
+			if dateTime > endDate:
+				continue
+
+			dtm.append( dateTime )
+			op.append( float( lineSplitted[4] ) )
+			hi.append( float( lineSplitted[5] ) )
+			lo.append( float( lineSplitted[6] ) )
+			cl.append( float( lineSplitted[7] ) )
+			vol.append( float( lineSplitted[8].rstrip() ) )
+
+			linesRead += 1	
+	except IOError:
+		readError = True
+	
+	if fileOpened:
+		fileHandle.close()
+
+	if readError:
+		return( None )
+
+	op = np.array( op[::-1], dtype='float' )
+	hi = np.array( hi[::-1], dtype='float' )
+	lo = np.array( lo[::-1], dtype='float' )
+	cl = np.array( cl[::-1], dtype='float' )
+	vol = np.array( vol[::-1], dtype='float' )
+	dtm = dtm[::-1]
+
+	return { 'op':op, 'hi':hi, 'lo':lo, 'cl':cl, 'vol':vol, 'dtm':dtm, 'length':linesRead, 'skipped':linesSkipped }
+# end of readFinam
+
+
 '''
 Allowed tickers so far: BTCUSD, LTCUSD, EURUSD
 '''
-def loadDaily( ticker, startYear=1980, endYear=2100, startMonth=1, endMonth=1, startDay=1, endDay=None ):
+def loadDaily( ticker, startYear=1980, endYear=2100, startMonth=1, endMonth=12, startDay=1, endDay=None ):
 	readError = False
 	fileOpened = False
 	
@@ -273,6 +354,11 @@ def reframeCandle( rates, startIndex, timeFrame ):
 
 logMessage = ""
 
+def getLogMessage():
+	global logMessage
+	return logMessage
+	
+
 # Calculates (inputs, label, profit) for each data index by index 
 def prepareData( rates, calcInp, calcInpParams, calcOut, calcOutParams, normalize=False, detachTest=20, precalcData=None ):
 	global logMessage
@@ -296,12 +382,20 @@ def prepareData( rates, calcInp, calcInpParams, calcOut, calcOutParams, normaliz
 	# If data precalculation is required
 	if precalcData is not None:
 		precalculated = precalcData( rates, calcOutParams )
-		calcOutParams['precalculated'] = precalculated
+	else:
+		precalculated = precalcFutureReturn( rates, calcOutParams )
+	calcOutParams['precalculated'] = precalculated
 
+	if calcOut is None:
+		calcOut = calcFutureReturn	
+
+	nnOp = []
 	nnDTM = []
 	nnInputs = []
 	nnLabels = []
 	nnProfit = []
+	nnRateIndexes = []
+	nnCustomOut = []
 	for i in range(1,length):
 		# Inputs
 		pastRates = { 'op': op[i:], 'hi':hi[i:], 'lo':lo[i:], 'cl':cl[i:], 'vol':vol[i:], 'dtm':dtm[i:] }
@@ -314,19 +408,27 @@ def prepareData( rates, calcInp, calcInpParams, calcOut, calcOutParams, normaliz
 		res = calcOut( futureRates, calcOutParams )
 		if not isinstance( res, tuple ):
 			continue
-		label, profit = res
+		if len( res ) == 2: # No custom output added
+			label, profit = res
+			customOut = None
+		elif len(res) == 3: # Custom output added
+			label, profit, customOut = res 
 
 		nnInputs.append( inputs )
 		nnLabels.append( label )
 		nnProfit.append( profit )
 		nnDTM.append( dtm[i-1] )
-
+		nnOp.append( op[i-1] )
+		nnRateIndexes.append( i-1 )
+		if customOut is not None:
+			nnCustomOut.append( customOut )
 	if len(nnInputs) == 0:
 		return retErr
 	if len(nnLabels) == 0:
 		return retErr
 
 	nnInputs = np.array( nnInputs, dtype='float' )
+	nnRateIndexes = np.array( nnRateIndexes, dtype='int' )
 	numSamples, numFeatures = np.shape( nnInputs )
 	nnLabels = np.array( nnLabels, dtype='float' )
 	shape = np.shape( nnLabels )
@@ -350,7 +452,7 @@ def prepareData( rates, calcInp, calcInpParams, calcOut, calcOutParams, normaliz
 			status, mean, std = taft.normalize( nnInputs[:,i], normInterval=[normIntervalStart,numSamples] )
 			if status is None:
 				logMessage += "Can't normalize %d column\n." % (i)
-				return None
+				return retErr
 			nnMean[i] = mean
 			nnStd[i] = std
 	else:
@@ -359,16 +461,18 @@ def prepareData( rates, calcInp, calcInpParams, calcOut, calcOutParams, normaliz
 		nnStd = None
 
 	if detachTest is None:
-		retval1 = { 'inputs': nnInputs, 'labels': nnLabels, 'profit': nnProfit, 
-			'numSamples':numSamples, 'numFeatures':numFeatures, 'numLabels':numLabels, 'mean':nnMean, 'std':nnStd, 'dtm':nnDTM }	
+		retval1 = { 'inputs': nnInputs, 'labels': nnLabels, 'profit': nnProfit, 'dtm':nnDTM, 'op':nnOp, 'customOut':nnCustomOut,
+			'numSamples':numSamples, 'numFeatures':numFeatures, 'numLabels':numLabels, 'mean':nnMean, 'std':nnStd, 'rateIndexes':nnRateIndexes }	
 		retval2 = None
 	else:
-		retval1 = { 'inputs': nnInputs[detachStart:], 'labels': nnLabels[detachStart:], 'profit': nnProfit[detachStart:], 
+		retval1 = { 'inputs': nnInputs[detachStart:], 'labels': nnLabels[detachStart:], 
+			'profit': nnProfit[detachStart:], 'customOut':nnCustomOut[detachStart:], 'rateIndexes':nnRateIndexes[detachStart:],
 			'numSamples':numSamples-detachStart, 'numFeatures':numFeatures, 'numLabels':numLabels, 
-			'mean':nnMean, 'std':nnStd, 'dtm':nnDTM[detachStart:] }	
-		retval2 = { 'inputs': nnInputs[:detachStart], 'labels': nnLabels[:detachStart], 'profit': nnProfit[:detachStart], 
+			'mean':nnMean, 'std':nnStd, 'dtm':nnDTM[detachStart:], 'op':nnOp[detachStart:] }	
+		retval2 = { 'inputs': nnInputs[:detachStart], 'labels': nnLabels[:detachStart], 
+			'profit': nnProfit[:detachStart], 'customOut':nnCustomOut[:detachStart], 'rateIndexes':nnRateIndexes[:detachStart],
 			'numSamples':detachStart, 'numFeatures':numFeatures, 'numLabels':numLabels, 
-			'mean':nnMean, 'std':nnStd, 'dtm':nnDTM[:detachStart] }	
+			'mean':nnMean, 'std':nnStd, 'dtm':nnDTM[:detachStart], 'op':nnOp[:detachStart] }	
 
 	return( retval1, retval2 )
 # end of def prepareData
@@ -394,6 +498,31 @@ def countLabels( labels ):
 			labelsCounter[ int(labels[i]) ] += 1
 		return labelsCounter
 # end of def
+
+
+def normalize( x, meanX=None, stdX=None, normInterval=[0,-1] ):
+	if meanX is None:
+		if normInterval[1] == -1:
+			meanX = np.mean(x)
+		else:
+			meanX = np.mean( x[ normInterval[0]:normInterval[1] ] )			
+	if stdX is None:
+		if normInterval[1] == -1:
+			stdX = np.std(x)
+		else:
+			stdX = np.std( x[ normInterval[0]:normInterval[1] ] )			
+	lenX = len(x)
+	if lenX == 0:
+		return None, None, None 
+	if not( stdX > 0.0 ):
+		meanX = 1
+		for i in range( lenX ):
+			x[i] = 1
+	else:
+		for i in range( lenX ):
+			x[i] = (x[i] - meanX) / stdX
+	return lenX, meanX, stdX
+# end of normalize
 
 
 def saveModel( fileName, model, calcInp, calcInpParams ):	
@@ -449,6 +578,8 @@ def loadModel( fileName ):
 
 
 def precalcFutureReturn( rates, params ):
+	if not 'numLabels' in params:
+		params['numLabels'] = 3
 	numLabels = params['numLabels']
 	lookAhead = params['lookAhead']-1
 
@@ -546,6 +677,68 @@ def calcFutureNHNL( rates, params ):
 # end of def
 
 
+def calcPastLogOfReturns( pastRates, params ):
+	inputs = []
+
+	lenRates = len(pastRates['cl'])
+	for l in range( len(params['lookBack']) ):
+		lookBack = params['lookBack'][l]
+		if lookBack >= lenRates:
+			return None
+
+		bDone = False
+		if 'lookBackLogOfReturns' in params: 
+			if params['lookBackLogOfReturns'] == 'hl':
+				ind = np.log( pastRates['cl'][0] / pastRates['hi'][lookBack] ) 
+				inputs.append(ind)
+
+				ind = np.log( pastRates['cl'][0] / pastRates['lo'][lookBack] ) 
+				inputs.append(ind)
+				bDone = True
+		if not bDone:
+			ind = np.log( pastRates['cl'][0] / pastRates['cl'][lookBack] ) 
+			inputs.append(ind)
+
+	return inputs
+# end of def
+
+
+def calcPastSTOs( pastRates, params ):
+	inputs = []
+
+	for p in range( len(params['lookBack']) ):
+		period = params['lookBack'][p] 
+
+		ret = taft.stochastic( periodK=period, hi=pastRates['hi'], lo=pastRates['lo'], cl=pastRates['cl'] )
+		if ret is None:
+			return None
+		ind = ret['K']
+		inputs.append(ind/100.0)
+
+	return inputs
+# end of def
+
+
+def calcPastNHNLs( pastRates, params ):
+	inputs = []
+
+	for p in range( len(params['lookBack']) ):
+		period = params['lookBack'][p] 
+
+		ind = taft.pNextHigher( period, pastRates['hi'] )
+		if ind == None:
+			return None
+		inputs.append( ind )
+
+		ind = taft.pNextLower( period, pastRates['lo'] )
+		if ind == None:
+			return None
+		inputs.append( ind )
+
+	return inputs
+# end of def
+
+
 def calcPastROCs( pastRates, params ):
 	step0 = params['step0']
 	stepSize = params['stepSize']
@@ -576,65 +769,6 @@ def calcPastROCs( pastRates, params ):
 		if ind == None:
 			return None
 		inputs.append(ind/100.0)
-
-		period += stepSize + stepSizeInc*curStep
-		curStep += 1
-
-	return inputs
-# end of def
-
-def calcPastSTOs( pastRates, params ):
-	step0 = params['step0']
-	stepSize = params['stepSize']
-	stepMax = params['stepMax']
-	if 'stepSizeInc' in params:
-		stepSizeInc = params['stepSizeInc']
-	else:
-		stepSizeInc = 0
-
-	inputs = []
-
-	period = step0
-	curStep = 0
-	while( curStep < stepMax ):
-		ret = stochastic( periodK=period, hi=pastRates['hi'], lo=pastRates['lo'], cl=pastRates['cl'] )
-		if ret is None:
-			return None
-		ind = ret['K']
-		inputs.append(ind/100.0)
-
-		period += stepSize + stepSizeInc*curStep
-		curStep += 1
-
-	return inputs
-# end of def
-
-
-def calcPastNHNLs( pastRates, params ):
-
-	step0 = params['step0']
-	stepSize = params['stepSize']
-	stepMax = params['stepMax']
-	if 'stepSizeInc' in params:
-		stepSizeInc = params['stepSizeInc']
-	else:
-		stepSizeInc = 0
-
-	inputs = []
-
-	period = step0
-	curStep = 0
-	while( curStep < stepMax ):
-
-		ind = taft.pNextHigher( period, pastRates['hi'] )
-		if ind == None:
-			return None
-		inputs.append( ind )
-
-		ind = taft.pNextLower( period, pastRates['lo'] )
-		if ind == None:
-			return None
-		inputs.append( ind )
 
 		period += stepSize + stepSizeInc*curStep
 		curStep += 1
