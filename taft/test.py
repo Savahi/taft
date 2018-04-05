@@ -86,7 +86,7 @@ def regressionModelProfit( model, data, title="", entryFunction=None, entryStd=N
 			cumulativeProfit[i] = cumulativeProfit[i+1] + profit
 
 	if verbose:
-		print "Profit = %g (out of %d trades)" % (overallProfit, numTrades)
+		print( "Profit = %g (out of %d trades)" % (overallProfit, numTrades) )
 
 	if plot:
 		if plotsCombined:

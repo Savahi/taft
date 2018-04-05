@@ -3,7 +3,7 @@ import numpy as np
 from datetime import datetime 
 from datetime import timedelta
 import cPickle as pickle
-import __init__ as taft
+import taft
 
 def loadFinam( fileName, startYear=None, endYear=None, startMonth=1, endMonth=12, startDay=1, endDay=None ):
 	readError = False

@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup( 
 	name = 'taft',
-	version = '1.0.7',
+	version = '1.0.9',
 	description = 'Technical analysis and research&simulation framework for algorithmic traders',
 	url = 'http://github.com/Savahi/taft',
 	author = 'Savahi',
