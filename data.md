@@ -1,14 +1,28 @@
-TAFT Sample Data Load Module
+TAFT Data Handling: the "data.py" Module
 ============================
-version 1.0.7
-  
-Related documents: [TAFT library](README.md), ['rates' data structure]   
+version 1.0.*		
+
+Related documents: [TAFT readme](README.md), [ti.py](ti.md) module, [data.py](data.md) module, [test.py](test.md) module, [rates](rates.md) data structure.		
 
 > **Important notice**:
 > Nothing important yet... :)   
 
-Loading data
-------------
+<a name="prepareData"></a>
+### prepareData ###
+def prepareData( rates, calcInp, calcInpParams, calcOut, calcOutParams, normalize=False, detachTest=20, precalcData=None )
+>		
+**rates** 
+**calcInp**
+**calcInpParams**
+**calcOut**
+**calcOutParams**
+**normalize**
+**detachTest** 
+**precalcData** 
+
+
+Rates loading
+-------------
 
 ### loadDaily ###
 ~~~

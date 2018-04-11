@@ -1,96 +1,40 @@
 import numpy as np
 
-_open = None
-_close = None
-_high = None
-_low = None
-_volumes = None
+from data import _open 
+from data import _close
+from data import _high
+from data import _low
+from data import _volumes
 
-def assignRates( open, high, low, close, volumes ):
-	_open = None
-	_close = None
-	_high = None
-	_low = None
-	_volumes = None
-
-def assignFinamRates( finamRates, flip = False ):
-	_open = np.array( finamRates.loc[:,'<OPEN>'] )
-	_close = np.array( finamRates.loc[:,'<CLOSE>'] )
-	_high = np.array( finamRates.loc[:,'<HIGH>'] )
-	_low = np.array( finamRates.loc[:,'<LOW>'] )
-	_volumes = np.array( finamRates.loc[:,'<VOL>'] )
-	if flip:
-		np.flip( _open )
-		np.flip( _high )
-		np.flip( _low )
-		np.flip( close )
-		np.flip( _volumes )
-
-# 
-def _defineRates( op=[], hi=[], lo=[], cl=[], vo=[] ):
-	global _open
-	global _high
-	global _low
-	global _close
-	global _volumes
-
-	ret = ()
-	if op is None:
-		op = _open
-		ret = ret + (op,)
-	elif len(op) > 0:
-		ret = ret + (op,)
-	if hi is None:
-		hi = _high
-		ret = ret + (hi,)
-	elif len(hi):
-		ret = ret + (hi,)
-	if lo is None:
-		lo = _low
-		ret = ret + (lo,)
-	elif len(lo) > 0:
-		ret = ret + (lo,)
-	if cl is None:
-		cl = _close
-		ret = ret + (cl,)
-	elif len(cl) > 0:
-		ret = ret + (cl,)
-	if vo is None:
-		vo = _volumes
-		ret = ret + (vo,)
-	elif len(vo) > 0:
-		ret = ret + (vo,)
-	return ret
-# end of _defineRates
-
+from data import _defineRates
 
 # AD-indicator
-def ad( period=1, shift=0, hi=None, lo=None, cl=None, vo=None, prev=None ):
-	(hi, lo, cl, vo) = _defineRates( hi=hi, lo=lo, cl=cl, vo=vo )
-	if hi is None or lo is None or cl is None or vo is None:
+def ad( period=1, shift=0, hi=None, lo=None, cl=None, vol=None, prev=None ):
+	(hi, lo, cl, vol) = _defineRates( hi=hi, lo=lo, cl=cl, vol=vol )
+	if hi is None or lo is None or cl is None or vol is None:
 		return None
 
 	adValue = None
 	if prev is not None:
 		if shift < len(cl):
-			adValue = prev + ad1( hi[shift], lo[shift], cl[shift], vo[shift] ) 
+			adValue = prev + ad1( hi[shift], lo[shift], cl[shift], vol[shift] ) 
 	else:
 		startIndex = shift + period - 1
 		if startIndex < len(cl):
 			prevAdValue = 0.0
 			for i in range( startIndex, shift-1, -1 ):
-				adValue = prevAdValue + ad1( hi[i], lo[i], cl[i], vo[i] ) 
+				adValue = prevAdValue + ad1( hi[i], lo[i], cl[i], vol[i] ) 
 				prevAdValue = adValue
 	
 	return adValue
 # end of AD
 
-def ad1( hi,lo,cl,vo ):
+def ad1( hi,lo,cl,vol ):
 	highLessLow = hi - lo
 	if highLessLow > 0.0:
 		closeLessLow = cl - lo
 		highLessClose = hi - cl
-		return ( ( vo * ( closeLessLow - highLessClose ) ) / highLessLow )
+		return ( ( vol * ( closeLessLow - highLessClose ) ) / highLessLow )
 	return 0
 # end of ad1
 
@@ -189,6 +133,48 @@ def adx( period=14, shift=0, hi=None, lo=None, cl=None, prev=None ):
 
 	return( { 'adx': adx, 'dx': dx0, "+DI": plusDI, "-DI": minusDI, "+DMsm": smoothedPlusDM, "-DMsm": smoothedMinusDM, "TRsm": smoothedTr } )
 # end of ADX	
+
+def aroon( period=14, shift=0, rates=None ):
+	global _close
+	if rates is None:
+		rates = _close
+	if rates is None:
+		return None
+
+	notAssigned = True
+	highest = -1.0 # Highest high to be stored here
+	highestIndex = -1.0 # The highest high index to be stored here
+	lowest = -1.0 # Lowest low to be stored here
+	lowestIndex = -1.0 # The lowest low index to be stored here
+
+	endIndex = shift + period + 1
+	if endIndex > len(rates):
+		return None
+
+	for i in range( shift, endIndex ):
+		priceValue = rates[i]
+		if notAssigned: 
+			highest = priceValue;
+			highestIndex = i;
+			lowest = priceValue;
+			lowestIndex = i;
+			notAssigned = False;
+		else:
+			if highest < priceValue:
+				highest = priceValue;
+				highestIndex = i;
+			elif lowest > priceValue:
+				lowest = priceValue;
+				lowestIndex = i;
+
+	if notAssigned:
+		return None
+
+	up = (period - (highestIndex-shift)) * 100.0 / period;
+	down = (period - (lowestIndex-shift)) * 100.0 / period;
+
+	return ( { 'up': up, 'down':down } )
+# end of aroon	
 
 
 # ATR - Average True Range
@@ -527,162 +513,4 @@ def pNextLower( period, rates ):
 
 	return numL / (period-1.0)
 # end of def 
-
-
-# Simulates trade
-def simulateTrade( shift=0, hi=None, lo=None, tp=None, sl=None, tpSlides=False, slSlides=False, side=1, price=None, type=0 ):
-	profit = None
-	closedAt = -1	
-
-	( hi, lo ) = _defineRates( hi=hi, lo=lo )
-	if hi is None or lo is None:
-		return None
-
-	hiMax = np.max(hi)
-	loMin = np.min(lo)
-	if tp is None:
-		tp = (hiMax - loMin)*100.0
-	if sl is None:
-		sl = (hiMax - loMin)*100.0
-
-	if price is None:
-		price = lo[shift] + (hi[shift] - lo[shift]) / 2.0
-
-	hiLessLo = np.subtract( hi, lo )
-	hiLessLoMean = np.mean( hiLessLo )
-
-	closePrice = None
-
-	if side == 1:
-		tpPrice = price + tp
-		slPrice = price - sl
-	else:
-		tpPrice = price - tp 
-		slPrice = price + sl
-
-	for i in range( shift, -1, -1 ):
-		if side == 1:
-			if hi[i] >= tpPrice:
-				profit = tpPrice - price
-				closedAt = i
-				closePrice = tpPrice
-				break
-			if lo[i] <= slPrice:
-				profit = slPrice - price
-				closedAt = i
-				closePrice = slPrice
-				break
-			if tpSlides == True:
-				if lo[i] + tp < tpPrice:
-					tpPrice = lo[i] + tp
-			if slSlides:
-				if hi[i] - sl > slPrice:
-					slPrice = hi[i] - sl
-		else:
-			if hi[i] >= slPrice:
-				profit = price - slPrice
-				closedAt = i
-				closePrice = slPrice				
-				break
-			if lo[i] <= tpPrice:
-				profit = price - tpPrice
-				closedAt = i
-				closePrice = tpPrice				
-				break
-			if tpSlides:
-				if hi[i] - tp > tpPrice:
-					tpPrice = hi[i] - tp
-			if slSlides:
-				if lo[i] + sl < slPrice:
-					slPrice = lo[i] + sl
-
-	return { 'profit': profit, 'closedAt':closedAt, 'closePrice':closePrice }
-# end of simulateTrade
-
-def normalize( x, meanX=None, stdX=None, normInterval=[0,-1] ):
-	if meanX is None:
-		if normInterval[1] == -1:
-			meanX = np.mean(x)
-		else:
-			meanX = np.mean( x[ normInterval[0]:normInterval[1] ] )			
-	if stdX is None:
-		if normInterval[1] == -1:
-			stdX = np.std(x)
-		else:
-			stdX = np.std( x[ normInterval[0]:normInterval[1] ] )			
-	if not( stdX > 0.0 ):
-		return None, None, None
-	lenX = len(x) 
-	for i in range( lenX ):
-		x[i] = (x[i] - meanX) / stdX
-	return lenX, meanX, stdX
-# end of normalize
-
-
-def readFile( fileName ):
-	return readFinam( fileName )
-
-
-def readFinam( fileName ):
-	readError = False
-	fileOpened = False
-	
-	linesRead = 0
-	linesSkipped = 0
-
-	from datetime import datetime 
-
-	op = []
-	hi = []
-	lo = []
-	cl = []
-	vol = []
-	dtm = []
-
-	try:
-		fileHandle = open( fileName, "r" )
-		fileOpened = True
-
-		firstLine = True
-		for line in fileHandle:
-
-			if firstLine:
-				firstLine = False
-				linesSkipped += 1
-				continue
-
-			lineSplitted = line.split( "," )
-			if len(lineSplitted) < 9:
-				linesSkipped += 1
-				continue
-
-			strDate = lineSplitted[2]
-			strTime = lineSplitted[3]
-			dtm.append( datetime.strptime(strDate + " " + strTime, '%Y%m%d %H%M%S') )
-
-			op.append( float( lineSplitted[4] ) )
-			hi.append( float( lineSplitted[5] ) )
-			lo.append( float( lineSplitted[6] ) )
-			cl.append( float( lineSplitted[7] ) )
-			vol.append( float( lineSplitted[8].rstrip() ) )
-
-			linesRead += 1	
-	except IOError:
-		readError = True
-	
-	if fileOpened:
-		fileHandle.close()
-
-	if readError:
-		return( None )
-
-	op = np.array( op[::-1], dtype='float' )
-	hi = np.array( hi[::-1], dtype='float' )
-	lo = np.array( lo[::-1], dtype='float' )
-	cl = np.array( cl[::-1], dtype='float' )
-	vol = np.array( vol[::-1], dtype='float' )
-	dtm = dtm[::-1]
-
-	return { 'op':op, 'hi':hi, 'lo':lo, 'cl':cl, 'vol':vol, 'dtm':dtm, 'length':linesRead, 'skipped':linesSkipped }
-# end of readFinam
 

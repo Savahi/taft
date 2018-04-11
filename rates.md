@@ -1,14 +1,15 @@
-TAFT: Rates Data Structure  
-==========================
-    
+TAFT "rates" Data Structure
+===========================
+version 1.0.*
+  
+Related documents: [readme](README.md), [ti.py](ti.md) module, [data.py](data.md) module, [test.py](test.md) module, [rates](rates.md) data structure.		
+
 > **Important notice**:
 > Nothing important yet... :)   
 
-Related documents: [TAFT library](README.md), [sample data load module](data.md)   
-
 ### Rates Format ###
 
-	Historic and actual rates usually come packed into a dictionary with the following elements:
+	Historic and actual rates usually come packed into a dictionary containing the following elements:
 		rates['op'] (1d numpy array, float) - open rates, the index of the most recent element is 0.
 		rates['hi'] (1d numpy array, float) - high rates, the index of the most recent element is 0.
 		rates['lo'] (1d numpy array, float) - low rates, the index of the most recent element is 0.

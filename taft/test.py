@@ -18,16 +18,13 @@ def displayPlots( title = None ):
 # end of def
 
 # Testing regression model without retraining
-def regressionModelProfit( model, data, title="", entryFunction=None, entryStd=None, flipOver=False,
+def regressionModelProfit( model, data, title="", entryFunction=None, entryFunctionParams=None, flipOver=False,
 	verbose=False, plot=False, plotsCombined=False, useTPSL=False, rates=None ):
-	
-	if entryStd is None:
-		entryStd = 2.0
-	
+		
 	if entryFunction is None:
-		def entryFunction( profit, meanZ, stdZ ):
-			threshold = meanZ + stdZ * entryStd
-			absMeanZ = np.abs(meanZ)
+		def entryFunction( profit, params ):
+			threshold = params['meanZ'] + params['stdZ'] * 2.0
+			absMeanZ = np.abs(params['meanZ'])
 			if profit > threshold and profit > absMeanZ:
 				return 1
 			elif profit < -threshold and profit < -absMeanZ:
@@ -39,17 +36,21 @@ def regressionModelProfit( model, data, title="", entryFunction=None, entryStd=N
 	lenZ = len(z)
 	meanZ = np.mean(z)
 	stdZ = np.std(z)
+	if entryFunctionParams is None:
+		entryFunctionParams = {}
+	entryFunctionParams['meanZ'] = meanZ
+	entryFunctionParams['stdZ'] = stdZ	
 	overallProfit = 0.0
 	cumulativeProfit = np.zeros( shape=(lenZ,) )
 	numTrades = 0
 	prevTrade = 0
-	for i in range(lenZ-1,-1,-1):
-		res = entryFunction( z[i], meanZ, stdZ )
+	for i in range( lenZ-1, -1, -1 ):
+		res = entryFunction( z[i], entryFunctionParams ) # Entry function may return either one of the following: side to trade (0 stands for 'no trade')
 		if 	isinstance( res, int ):
 			trade = res
 			tp = np.abs( z[i] )
 			sl = tp
-		else:
+		else: # or side of trade + take profit & stop loss 
 			trade, tp, sl = res
 		profit = 0.0
 		if trade == 1:
@@ -105,22 +106,22 @@ def regressionModelProfit( model, data, title="", entryFunction=None, entryStd=N
 
 # Testing regression model with re-training
 def regressionModelTest( model, data, trainHistory=100, repeatTrainAfter=10, title="", 
-	entryFunction=None, entryStd=None, normalize=False, flipOver=False, verbose=False, plot=False, plotsCombined=False, 
+	entryFunction=None, entryFunctionParams=None, normalize=False, flipOver=False, verbose=False, plot=False, plotsCombined=False, 
 	useTPSL=False, rates=None ):
 	
 	if entryStd is None:
 		entryStd = 2.0
 	
 	if entryFunction is None: 
-		def entryFunction( profit, meanZ, stdZ ):
-			threshold = meanZ + stdZ * entryStd
-			absMeanZ = np.abs(meanZ)
+		def entryFunction( profit, params ):
+			threshold = params['meanZ'] + param['stdZ'] * entryStd
+			absMeanZ = np.abs( param['meanZ'] )
 			if profit > threshold and profit > absMeanZ:
 				return 1
 			elif profit < -threshold and profit < -absMeanZ:
 				return -1
 			return 0 	
-	# end of if		
+	# end of if
 
 	lenData = len( data['profit'] )
 	overallProfit = 0.0
@@ -153,12 +154,17 @@ def regressionModelTest( model, data, trainHistory=100, repeatTrainAfter=10, tit
 				break
 
 		model.fit( trainInputs, trainProfit )
+		zTrain = model.predict( trainInputs )
+		meanZ = np.mean( zTrain )
+		stdZ = np.std( zTrain )
+		if entryFunctionParams is None:
+			entryFunctionParams = {}
+		entryFunctionParams['meanZ'] = meanZ
+		entryFunctionParams['stdZ'] = stdZ	
 		z = model.predict( testInputs )
 		lenZ = len(z)
-		meanZ = np.mean(z)
-		stdZ = np.std(z)
 		for i in range(lenZ-1,-1,-1):
-			res = entryFunction( z[i], meanZ, stdZ )
+			res = entryFunction( z[i], entryFunctionParams )
 			if 	isinstance( res, int ):
 				trade = res
 				tp = np.abs(z[i])
