@@ -8,18 +8,18 @@ Related documents: [TAFT readme](README.md), [ti.py](ti.md) module, [data.py](da
 > Nothing important yet... :)   
 
 ** Contents **		
-[regressionModelProfit](#regressionModelProfit)	
-[regressionModelTest](#regressionModelTest)	
-[displayPlots](#displayPlots)	
-[simulateTrade](#simulateTrade)	
+[regressionModelProfit](#regressionmodelprofit)	
+[regressionModelTest](#regressionmodeltest)	
+[displayPlots](#displayplots)	
+[simulateTrade](#simulatetrade)	
 
-<a name="regressionModelProfit"></a>
+<a name="regressionmodelprofit"></a>
 ### regressionModelProfit ###
-~~~
+```python
 def regressionModelProfit( model, data, title="", entryFunction=None, 
 	entryFunctionParams=None, flipOver=False,
 	verbose=False, plot=False, plotsCombined=False, useTPSL=False, rates=None )
-~~~
+```
 Tests trained regression model for performance and profit.	
 >	 
 **model** (object) - a regression model tested (e.g. MLPRegression, SVR etc);	
@@ -41,12 +41,13 @@ Returns a dictionary of the following structure:
 'cumulativeProfit' - an array that stores cumulative profit after each trade (the PnL curve).	
 'overallProfit' (double) - the profit gained during simulation.	
 
-<a name="regressionModelTest"></a>
+<a name="regressionmodeltest"></a>
 ### regressionModelTest ###
-
+```python
 def regressionModelTest( model, data, trainHistory=100, repeatTrainAfter=10, title="", 
 	entryFunction=None, entryFunctionParams=None, normalize=False, flipOver=False, verbose=False, plot=False, plotsCombined=False, 
 	useTPSL=False, rates=None )
+```
 >				
 **model** (object) - a regression model tested (e.g. MLPRegression, SVR etc);	
 **data** (dictionary) -  used to feed the model with train and test data; such a dictionary can be obtained with the [prepareData](data.md) function; 	
@@ -60,14 +61,16 @@ def regressionModelTest( model, data, trainHistory=100, repeatTrainAfter=10, tit
 **useTPSL** (boolean) - if **true** the function simulates each trade usign take profit and stop loss, if **false** the function uses data['profit'] array to determine profit for each trade. 		
 **rates** (dictionary) - a [rates](rates.md) dictionary. It must be specified only if **useTPSL** is **true**.
 
-<a name="displayPlots"></a>
+<a name="displayplots"></a>
 ### displayPlots ###
-~~~
+```python
 def displayPlots( title = None )
-~~~
+```
 Displays plots created by the [regressionModelProfit()](#regressionModelProfit) or [regressionModelTest()](#regressionModelTest) functions.		
 > **title** (string, optional) - A title for the plot displayed.  		
 
-<a name="simulateTrade"></a>
+<a name="simulatetrade"></a>
 ### simulateTrade ###
- simulateTrade( rateIndex, rates, takeProfit, stopLoss, dir )
+```python
+def simulateTrade( rateIndex, rates, takeProfit, stopLoss, dir )
+```

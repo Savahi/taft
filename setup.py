@@ -14,7 +14,7 @@ setup(
 	],	
 	packages = ['taft'],
 	keywords = 'technical analysis trading stock exchange',
-	install_requires = ['numpy', 'datetime', 'os', 'cPickle'],
+	install_requires = ['numpy', 'datetime', 'os', 'dill'],
 	include_package_data=True,
 	zip_safe = False )
 
