@@ -40,18 +40,18 @@ def prepareData( rates, calcInp, calcInpParams, calcOut, calcOutParams,
 	normalize=False, detachTest=20, precalcData=None )
 ```
 Takes "raw" rates and prepares it for feeding into a ML model, e.g. calculates inputs and outputs, performs normalization etc.	 
->		
-**rates** (dictionary) - "raw" rates presented in the from of a [rates](rates.md) data structure. Usually rates are loaded by one of the [rates loading functions](#ratesloadingfunctions).		
-**calcInp** (function, optional) - A user defined function used to calculate inputs for each sample. If "None" the default one is used. 	
-**calcInpParams** (dictionary, optional) - A set of user-defined parameters presented as a python dictionary used to pass additional parameters into the **calcInp** function.		  
-**calcOut** (function, optional) - A user defined function used to calculate **output** for each **input**. 		
-**calcOutParams** (dictionary, optional) - A set of user-defined parameters presented as a python dictionary used to pass additional parameters into the **calcOut** function.		
-**normalize** (boolean, optional) - **True** value makes the function normalize inputs before feeding into the model. 	
-**detachTest** (integer, optional) - Specifies how many samples (in %) must be used as test ones.   	
-**precalcData** (function, optional) - A user-defined function used to make preliminary calculations before calculating inputs and outputs.				
+>    
+**rates** (dictionary) - "raw" rates presented in the from of a [rates](rates.md) data structure. Usually rates are loaded by one of the [rates loading functions](#ratesloadingfunctions).    
+**calcInp** (function, optional) - A user defined function used to calculate inputs for each sample. If "None" the default one is used.    
+**calcInpParams** (dictionary, optional) - A set of user-defined parameters presented as a python dictionary used to pass additional parameters into the **calcInp** function.    
+**calcOut** (function, optional) - A user defined function used to calculate **output** for each **input**.     
+**calcOutParams** (dictionary, optional) - A set of user-defined parameters presented as a python dictionary used to pass additional parameters into the **calcOut** function.    
+**normalize** (boolean, optional) - **True** value makes the function normalize inputs before feeding into the model.    
+**detachTest** (integer, optional) - Specifies how many samples (in %) must be used as test ones.    
+**precalcData** (function, optional) - A user-defined function used to make preliminary calculations before calculating inputs and outputs.    				
 
 Returns two dictionary variables, the first one stores train data while the other one stores test data. If **detachTest** is **None** the second returned variable is **None** too. Each of the dictionary variables has the following structure:	
->	
+>    
 **'numSamples'** (integer) - the number of samples to train or test the model with (equals to the size of the 'inputs' array alogn the '0' axis).	
 **'numFeatures'** (integer) - the number of features (equals the size of the 'inputs' array along the '1' axis).		
 **'numLabels'** (integer) - the number of classes the model can recognize. **Important notice!** Short trades must be encoded with '0' which is the smallest allowed value of an item in the array, while long ones must be encoded with the biggest allowed value of the array which is determined by the number of classes.		  
