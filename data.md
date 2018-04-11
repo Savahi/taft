@@ -5,9 +5,11 @@ version 1.0.*
 Related documents: [TAFT readme](README.md), [ti.py](ti.md) module, [data.py](data.md) module, [test.py](test.md) module, [rates](rates.md) data structure.		
 
 > **Important notice**:
-> Nothing important yet... :)   
+> Nothing important yet... :)    
 
-** Contents **		
+**Contents**		
+[load](#load)	
+[loadFinam](#loadfinam)	
 [loadDaily](#loaddaily)	
 [prepareData](#preparedata)	
 [countLabels](#countlabels)	
@@ -15,9 +17,25 @@ Related documents: [TAFT readme](README.md), [ti.py](ti.md) module, [data.py](da
 [saveModel](#savemodel)	
 [loadModel](#loadmodel)	
 
-<a name="ratesloadingfunctions"></a>
-Rates loading
--------------
+<a name="load"></a>
+### load ###
+```python
+def load( fileName, startYear=None, endYear=None, 
+	startMonth=1, endMonth=12, startDay=1, endDay=None )
+```
+Loads rates from a file. 
+Returns a dictionary variable of the [rates](rates.md) data structure. 
+
+
+<a name="loadfinam"></a>
+### loadFinam ###
+```python
+def loadFinam( fileName, startYear=None, endYear=None, 
+	startMonth=1, endMonth=12, startDay=1, endDay=None )
+```
+Loads rates from a file of the "Finam" data format. 
+Returns a dictionary variable of the [rates](rates.md) data structure. 
+
 
 <a name="loaddaily"></a>
 ### loadDaily ###
@@ -39,7 +57,7 @@ def prepareData( rates, calcInp, calcInpParams, calcOut, calcOutParams,
 	normalize=False, detachTest=20, precalcData=None )
 ```
 Prepares "raw" for feeding into an ML model, e.g. calculates inputs and outputs, performs normalization etc.	 
-> **rates** (dictionary) - "raw" rates presented in the from of a [rates](rates.md) data structure. Usually rates are loaded by one of the [rates loading functions](#ratesloadingfunctions).    
+> **rates** (dictionary) - "raw" rates presented in the from of a [rates](rates.md) data structure. Usually rates are loaded by one of the *rates loading* functions. e.g. [load](#load), [loadDaily](#loaddaily), [loadFinam](#loadfinam).    
 > **calcInp** (function, optional) - A user defined function used to calculate inputs for each sample. If "None" the default one is used.    
 > **calcInpParams** (dictionary, optional) - A set of user-defined parameters presented as a python dictionary used to pass additional parameters into the **calcInp** function.    
 > **calcOut** (function, optional) - A user defined function used to calculate **output** for each **input**.     
