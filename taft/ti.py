@@ -5,7 +5,6 @@ from data import _close
 from data import _high
 from data import _low
 from data import _volumes
-
 from data import _defineRates
 
 # AD-indicator
@@ -270,16 +269,18 @@ def ema( period=10, shift=0, alpha=None, rates=None, prev=None, history=0 ):
 		alpha = 2.0 / (period + 1.0)
 
 	emaValue = None
+	lenRates = len(rates)
 
 	# Previously calculated ema is given 
 	if prev is not None:
-		if shift < len(rates):
+		if shift < lenRates:
 			emaValue = (rates[shift] - prev) * alpha + prev
 	else:
 		if history == 0:
-			end = shift + period - 1
-			if end < len(rates):
-				emaValue = np.mean( rates[shift:end+1] )
+			end = shift + period
+			if end > lenRates:
+				end = lenRates
+			emaValue = np.mean( rates[shift:end] )
 		else:
 			end = shift + period + history - 1
 			if end < len(rates):
@@ -291,56 +292,57 @@ def ema( period=10, shift=0, alpha=None, rates=None, prev=None, history=0 ):
 
 
 # MACD - Moving Average Convergence/Divergence Oscillator
-def macd( periodFast=12, periodSlow=26, periodSignal=9, shift=0, rates=None ):
+def macd( periodFast=12, periodSlow=26, periodSignal=9, shift=0, rates=None, prev=None ):
 	global _close
 	if rates is None:
 		rates = _close
 	if rates is None:
 		return None
 
-	st = shift + periodSlow + periodSignal - 1
-	if st >= len(rates):
-		return None
-	
-	fastLessSlow = np.empty( shape=periodSignal, dtype='float' )
-	emaSlow = ema( period=periodSlow, shift=shift+periodSignal-1, rates=rates )
-	emaFast = ema( period=periodFast, shift=shift+periodSignal-1, rates=rates )
-	fastLessSlow[periodSignal-1] = emaFast - emaSlow
-	for i in range( shift + periodSignal - 2, shift-1, -1 ):
-		emaSlow = ema( period=periodSlow, shift=i, rates=rates, prev = emaSlow )
-		emaFast = ema( period=periodFast, shift=i, rates=rates, prev = emaSlow )
-		fastLessSlow[i-shift] = emaFast - emaSlow
+	#st = shift + periodSlow + periodSignal - 1
+	#if st >= len(rates):
+	#	return None
 
-	emaSignal = ema( period=periodSignal, rates=fastLessSlow )
+	if prev is not None:
+		emaFast = ema( period=periodFast, rates=rates, prev = prev['fast'] )
+		emaSlow = ema( period=periodSlow, rates=rates, prev = prev['slow'] )
+		macd = emaFast - emaSlow
+		emaSignal = ema( period=periodSignal, rates=[macd], prev=prev['signal'] )
+	else:
+		emaFast = ema( period=periodFast, rates=rates )
+		emaSlow = ema( period=periodSlow, rates=rates )
+		macd = emaFast - emaSlow
+		emaSignal = ema( period=periodSignal, rates=[macd] )
+	histogram = (macd - emaSignal)
 
-	return( {'slow': emaSlow, 'fast': emaFast, 'signal': emaSignal } )
+	return( {'slow': emaSlow, 'fast': emaFast, 'macd': macd, 'signal': emaSignal, 'histogram': histogram } )
 # end of macd
 
 
-# SMMA - SMooothed Moving Average
+# SMMA - Smooothed Moving Average
 def smma( period, shift=0, rates=None ):
 	return ema( period=period, shift=shift, alpha = 1.0 / period, rates=rates )
 # end of smma
 
 
 # Stochastic (FSI) - Stochastic Oscillator
-def stochastic( periodK=14, periodD=3, shift=0, hi=None, lo=None, cl=None ):
+def stochastic( period=14, periodD=3, shift=0, hi=None, lo=None, cl=None ):
 	(hi, lo, cl) = _defineRates( hi=hi, lo=lo, cl=cl )
 	if hi is None or lo is None or cl is None:
 		return None
 
 	ratesLen = len(cl)
-	if shift + periodK + periodD - 1 >= ratesLen:
-		if shift + periodK - 1 >= ratesLen: # The 'K' value is also impossible to calculate?
+	if shift + period + periodD - 1 >= ratesLen:
+		if shift + period - 1 >= ratesLen: # The 'K' value is also impossible to calculate?
 			return None
-		valueK = stochasticK( hi, lo, cl, shift, shift+periodK-1 ) # Calculating the 'K' value only
+		valueK = stochasticK( hi, lo, cl, shift, shift + period - 1 ) # Calculating the 'K' value only
 		if valueK is None:
 			return None
 		return( { 'K':valueK, 'D':None } )
 
 	valuesK = np.empty( shape=periodD, dtype='float' )
 	for i in range( periodD ):
-		valueK = stochasticK( hi, lo, cl, shift+i, shift+i+periodK-1 )
+		valueK = stochasticK( hi, lo, cl, shift+i, shift + i + period - 1 )
 		if valueK is None:
 			return None
 		valuesK[i] = valueK
