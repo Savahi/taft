@@ -100,18 +100,19 @@ def ema( period=10, shift=0, alpha=None, rates=None, prev=None ):
 
 [See the sample code here](samples/test-ma.py) 
 
-### Stochastic-oscillator ###
+### Stochastic oscillator ###
 ~~~
-def stochastic( periodK=14, periodD=3, shift=0, hi=None, lo=None, cl=None ):
+def stochastic( period=14, periodD=3, smoothing=1, shift=0, hi=None, lo=None, cl=None ):
 ~~~
-	periodK (int) - the period  of the 'fast' stochastic line, default: 14
-	periodD (int) - the period  of the 'slow' stochastic line, default: 3
+	period (int) - the period of the "K" stochastic line, default: 14
+	periodD (int) - the period of the "D" stochastic line, default: 3
+	smoothing (int) - the smoothing for the "K" line. At present the parameter is IGNORED assumed being always equal to "1". 
 	shift (int) - the shift inside the data arrays (hi,lo,cl) to calculate the indicator for, default: 0
 	hi (numpy array, float) - HIGH rates
 	lo (numpy array, float) - LOW rates
 	cl (numpy array, float) - CLOSE rates
 
-	Returns: the 'K' ('fast) stochastic value, 'D': the 'D' ('slow') tochastic value, 'None' if failed.
+	Returns: the 'K' ('fast) stochastic value, 'D': the 'D' ('slow') stochastic value, 'None' if failed.
 
 [See the sample code here](samples/test-stochastic.py) 
 	
@@ -147,7 +148,22 @@ def sma( period=10, shift=0, rates=None ):
 	shift (int) - the shift inside the 'rates' array to calculate the indicator for, default: 0 (the last received rate)
 	rates (numpy array, float) - the rates
 
-	Returns (float) - the SMA value, 'None' if failed 
+	Returns (float) - the SMA value (double), 'None' if failed 
+
+### Williams oscillator ###
+~~~
+def williams( period=14, shift=0, hi=None, lo=None, cl=None ):
+~~~
+	period (int) - the period  of the indicator, default: 14
+	shift (int) - the shift inside the data arrays (hi,lo,cl) to calculate the indicator for, default: 0
+	hi (numpy array, float) - HIGH rates
+	lo (numpy array, float) - LOW rates
+	cl (numpy array, float) - CLOSE rates
+
+	Returns: a double value or 'None' if failed.
+
+[See the sample code here](samples/test-stochastic.py) 
+
 
 
 Simulation and Research

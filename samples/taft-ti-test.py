@@ -90,7 +90,6 @@ for i in range( lenRates-1, -1, -1 ):
 	output += str(v) + "\n"
 print output
 
-
 # Stochastic
 rates = taft.data.load( "data/stochastic.txt" )
 lenRates = len( rates['cl'] )
@@ -102,5 +101,51 @@ for i in range( lenRates-1, -1, -1 ):
 	if v is None:
 		continue
 	output += str(v) + "\n"
+print output
+
+# ROC
+rates = taft.data.load( "data/roc.txt" )
+lenRates = len( rates['cl'] )
+
+output = "**** roc:\n"
+v = None
+for i in range( lenRates-1, -1, -1 ):
+	v = taft.ti.roc( period=7, rates=rates['cl'][i:] )
+	if v is None:
+		continue
+	output += str(v) + "\n"
+print output
+
+# RSI
+rates = taft.data.load( "data/rsi.txt" )
+lenRates = len( rates['cl'] )
+
+output = "**** rsi:\n"
+v = None
+for i in range( lenRates-1, -1, -1 ):
+	v = taft.ti.rsi( period=4, rates=rates['cl'][i:], prev=v )
+	#if v is None:
+	#	continue
+	output += str(v) + ", close=" +  str(rates['cl'][i]) +  "\n"
+print output
+
+# SMA
+rates = taft.data.load( "data/sma.txt" )
+lenRates = len( rates['cl'] )
+
+output = "**** sma:\n"
+for i in range( lenRates-1, -1, -1 ):
+	v = taft.ti.sma( period=7, rates=rates['cl'][i:] )
+	output += str(v) + ", close=" +  str(rates['cl'][i]) +  "\n"
+print output
+
+# Williams
+rates = taft.data.load( "data/williams.txt" )
+lenRates = len( rates['cl'] )
+
+output = "**** williams:\n"
+for i in range( lenRates-1, -1, -1 ):
+	v = taft.ti.williams( period=14, hi=rates['hi'][i:], lo=rates['lo'][i:], cl=rates['cl'][i:] )
+	output += str(v) + ", close=" +  str( rates['cl'][i] ) +  "\n"
 print output
 

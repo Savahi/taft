@@ -326,7 +326,7 @@ def smma( period, shift=0, rates=None ):
 
 
 # Stochastic (FSI) - Stochastic Oscillator
-def stochastic( period=14, periodD=3, shift=0, hi=None, lo=None, cl=None ):
+def stochastic( period=14, periodD=3, smoothing=1, shift=0, hi=None, lo=None, cl=None ):
 	(hi, lo, cl) = _defineRates( hi=hi, lo=lo, cl=cl )
 	if hi is None or lo is None or cl is None:
 		return None
@@ -404,16 +404,16 @@ def rsi( period=14, shift=0, rates=None, prev = None ):
 			currentGain = difference
 		if difference < 0.0:
 			currentLoss = -difference
-		averageGain = (averageGainPrev * (period-1.0) + currentGain) / period 
-		averageLoss = (averageLossPrev * (period-1.0) + currentLoss) / period 
+		averageGain = (averageGainPrev * (period - 1.0) + currentGain) / period 
+		averageLoss = (averageLossPrev * (period - 1.0) + currentLoss) / period 
 	else:
-		st = shift + period - 1
-		if st + 1 >= len(rates):
+		st = shift + period
+		if st >= len(rates):
 			return None 
 		upSum = 0.0
 		downSum = 0.0
-		for i in range( st, shift-1, -1 ):
-			difference = rates[i] - rates[i+1]
+		for i in range( st, shift, -1 ):
+			difference = rates[i-1] - rates[i]
 			if difference > 0:
 				upSum += difference
 			elif difference < 0:
@@ -438,9 +438,10 @@ def sma( period=10, shift=0, rates=None ):
 	if rates is None:
 		return None
 	
+	lenRates = len(rates)
 	endIndex = shift + period
-	if endIndex > len(rates):
-		return None
+	if endIndex > lenRates:
+		endIndex = lenRates
 
 	return np.mean( rates[shift:endIndex] )	
 # end of sma
