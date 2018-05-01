@@ -56,12 +56,12 @@ def loadFinam( fileName, startYear=None, endYear=None, startMonth=1, endMonth=12
 	linesRead = 0
 	linesSkipped = 0
 
-	if endDay is None:
-		endDay = getEndDayOfMonth( endMonth )
 	if startYear is None:
 		startYear = 1900
 	if endYear is None:
 		endYear = 2200
+	if endDay is None:
+		endDay = getEndDayOfMonth( endYear, endMonth )
 
 	from datetime import datetime 
 
@@ -137,12 +137,12 @@ def load( fileName, startYear=None, endYear=None, startMonth=1, endMonth=12, sta
 	linesRead = 0
 	linesSkipped = 0
 
-	if endDay is None:
-		endDay = getEndDayOfMonth( endMonth )
 	if startYear is None:
 		startYear = 1900
 	if endYear is None:
 		endYear = 2200
+	if endDay is None:
+		endDay = getEndDayOfMonth( endYear, endMonth )
 
 	from datetime import datetime 
 
@@ -224,7 +224,7 @@ def loadDaily( ticker, startYear=1980, endYear=2100, startMonth=1, endMonth=12, 
 	fileName = os.path.join( dataPath, ticker + "_D.csv" )
 
 	if endDay is None:
-		endDay = getEndDayOfMonth( endMonth )
+		endDay = getEndDayOfMonth( endYear, endMonth )
 
 	startDate = datetime.strptime( str(startYear) + ":" + str(startMonth) + ":" + str(startDay), "%Y:%m:%d" )
 	endDate = datetime.strptime( str(endYear) + ":" + str(endMonth) + ":" + str(endDay), "%Y:%m:%d" )
@@ -310,7 +310,7 @@ def loadMinutes( ticker, startYear=2017, endYear=2017, startMonth=1, endMonth=10
 	fileName = os.path.join( dataPath, ticker + "_m.csv" )
 
 	if endDay is None:
-		endDay = getEndDayOfMonth( endMonth )
+		endDay = getEndDayOfMonth( endYear, endMonth )
 
 	startDate = datetime.strptime( str(startYear) + ":" + str(startMonth) + ":" + str(startDay), "%Y:%m:%d" )
 	endDate = datetime.strptime( str(endYear) + ":" + str(endMonth) + ":" + str(endDay), "%Y:%m:%d" )
@@ -368,11 +368,20 @@ def loadMinutes( ticker, startYear=2017, endYear=2017, startMonth=1, endMonth=10
 # end of readMinutes
 
 
-def getEndDayOfMonth( month ):
+def getEndDayOfMonth( year, month ):
 	if month==1 or month==3 or month==5 or month==7 or month==8 or month==10 or month==12:
 		endDay = 31
 	elif month == 2:
-		endDay = 28
+		if year % 4 == 0:
+			if year % 100 == 0:
+				if year % 400 == 0:
+					endDay = 29
+				else:
+					endDay = 28
+			else:
+				endDay = 29
+		else:
+			endDay = 28
 	else:
 		endDay = 30
 	return endDay

@@ -36,8 +36,8 @@ def adx( period=14, shift=0, hi=None, lo=None, cl=None, prev=None )
 	cl (numpy array, float) - CLOSE rates
 	prev (dict) - previously returned by the function, default: None 
 
-	Returns (dict) - { 'adx': the ADX value, 'dx': the DX value, "+DI": the "+DI" value, "-DI": the "-DI value, 
-	"+DMsm": the smoothed "+DM" value, "-DMsm": the smoothed "-DM" value, "TRsm": the smoothed 'true-range' value }, 'None' if failed
+	Returns (dict) - { 'adx': the ADX value, 'dx': the DX value, "pdi": the "+DI" value, "mdi": the "-DI value, 
+	"pdmsm": the smoothed "+DM" value, "mdmsm": the smoothed "-DM" value, "trsm": the smoothed 'true-range' value }, 'None' if failed
 
 [See the sample code here](samples/test-adx.py) 
 

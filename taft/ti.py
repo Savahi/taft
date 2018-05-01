@@ -47,9 +47,9 @@ def adx( period=14, shift=0, hi=None, lo=None, cl=None, prev=None ):
 		if shift+1 >= len(cl):
 			return None
 
-		smoothedTr = prev['TRsm']
-		smoothedPlusDM = prev['+DMsm']
-		smoothedMinusDM = prev['-DMsm']	
+		smoothedTr = prev['trsm']
+		smoothedPlusDM = prev['pdmsm']
+		smoothedMinusDM = prev['pdmsm']	
 		tr = max( hi[shift] - lo[shift], abs( hi[shift] - cl[shift+1]), abs(lo[shift]-cl[shift+1]) )
 		plusDM = 0.0
 		minusDM = 0.0
@@ -130,7 +130,7 @@ def adx( period=14, shift=0, hi=None, lo=None, cl=None, prev=None ):
 		adx = np.mean( dx )
 		dx0 = dx[0]
 
-	return( { 'adx': adx, 'dx': dx0, "+DI": plusDI, "-DI": minusDI, "+DMsm": smoothedPlusDM, "-DMsm": smoothedMinusDM, "TRsm": smoothedTr } )
+	return( { 'adx': adx, 'dx': dx0, "pdi": plusDI, "mdi": minusDI, "pdmsm": smoothedPlusDM, "pdmsm": smoothedMinusDM, "trsm": smoothedTr } )
 # end of ADX	
 
 def aroon( period=14, shift=0, rates=None ):
@@ -213,7 +213,7 @@ def tr( hi, lo, cl, shift ):
 
 
 # Bollinger Bands
-def bollinger( period=20, shift=0, nStds = 2.0, rates=None ):
+def bollinger( period=20, shift=0, nStds=2.0, rates=None ):
 	(rates,) = _defineRates( cl=rates )
 	if rates is None:
 		return None
@@ -225,7 +225,10 @@ def bollinger( period=20, shift=0, nStds = 2.0, rates=None ):
 	bandMiddle = np.mean( rates[shift:en] )
 	bandStd = np.std( rates[shift:en] )
 
-	return( { 'middle':bandMiddle, 'std': bandStd, 'upper': bandMiddle + nStds * bandStd, 'lower': bandMiddle - nStds * bandStd } )
+	#print "bandMiddle=%s , nStds=%s ,bandStd = %s" % (str(bandMiddle),str(nStds),str(bandStd))
+	top = (bandMiddle + nStds * bandStd)
+	bottom = (bandMiddle - nStds * bandStd)
+	return( { 'ma':bandMiddle, 'std': bandStd, 'top': top, 'bottom': bottom  } )
 # end of bollinger
 
 
@@ -278,9 +281,10 @@ def ema( period=10, shift=0, alpha=None, rates=None, prev=None, history=0 ):
 	else:
 		if history == 0:
 			end = shift + period
-			if end > lenRates:
-				end = lenRates
-			emaValue = np.mean( rates[shift:end] )
+			if shift < lenRates:
+				if end > lenRates:
+					end = lenRates
+				emaValue = np.mean( rates[shift:end] )
 		else:
 			end = shift + period + history - 1
 			if end < len(rates):
@@ -304,17 +308,30 @@ def macd( periodFast=12, periodSlow=26, periodSignal=9, shift=0, rates=None, pre
 	#	return None
 
 	if prev is not None:
-		emaFast = ema( period=periodFast, rates=rates, prev = prev['fast'] )
-		emaSlow = ema( period=periodSlow, rates=rates, prev = prev['slow'] )
-		macd = emaFast - emaSlow
-		emaSignal = ema( period=periodSignal, rates=[macd], prev=prev['signal'] )
+		emaFast = ema( period=periodFast, rates=rates, shift=shift, prev = prev['fast'] )
+		emaSlow = ema( period=periodSlow, rates=rates, shift=shift, prev = prev['slow'] )
+		if emaFast is None or emaSlow is None:
+			macd = None
+			emaSignal = None
+		else:
+			macd = emaFast - emaSlow
+			emaSignal = ema( period=periodSignal, rates=[macd], shift=shift, prev=prev['signal'] )
 	else:
-		emaFast = ema( period=periodFast, rates=rates )
-		emaSlow = ema( period=periodSlow, rates=rates )
-		macd = emaFast - emaSlow
-		emaSignal = ema( period=periodSignal, rates=[macd] )
-	histogram = (macd - emaSignal)
+		emaFast = ema( period=periodFast, shift=shift, rates=rates )
+		emaSlow = ema( period=periodSlow, shift=shift, rates=rates )
+		if emaFast is None or emaSlow is None:
+			macd = None
+			emaSignal = None
+		else:
+			macd = emaFast - emaSlow
+			emaSignal = ema( period=periodSignal, shift=shift, rates=[macd] )
+	if macd is not None and emaSignal is not None:
+		histogram = (macd - emaSignal)
+	else:
+		histogram = None
 
+	if macd is None or emaSignal is None or histogram is None:
+		return None 
 	return( {'slow': emaSlow, 'fast': emaFast, 'macd': macd, 'signal': emaSignal, 'histogram': histogram } )
 # end of macd
 
@@ -323,48 +340,6 @@ def macd( periodFast=12, periodSlow=26, periodSignal=9, shift=0, rates=None, pre
 def smma( period, shift=0, rates=None ):
 	return ema( period=period, shift=shift, alpha = 1.0 / period, rates=rates )
 # end of smma
-
-
-# Stochastic (FSI) - Stochastic Oscillator
-def stochastic( period=14, periodD=3, smoothing=1, shift=0, hi=None, lo=None, cl=None ):
-	(hi, lo, cl) = _defineRates( hi=hi, lo=lo, cl=cl )
-	if hi is None or lo is None or cl is None:
-		return None
-
-	ratesLen = len(cl)
-	if shift + period + periodD - 1 >= ratesLen:
-		if shift + period - 1 >= ratesLen: # The 'K' value is also impossible to calculate?
-			return None
-		valueK = stochasticK( hi, lo, cl, shift, shift + period - 1 ) # Calculating the 'K' value only
-		if valueK is None:
-			return None
-		return( { 'K':valueK, 'D':None } )
-
-	valuesK = np.empty( shape=periodD, dtype='float' )
-	for i in range( periodD ):
-		valueK = stochasticK( hi, lo, cl, shift+i, shift + i + period - 1 )
-		if valueK is None:
-			return None
-		valuesK[i] = valueK
-
-	return( { 'K': valuesK[0], 'D': np.mean( valuesK ) } )
-# end of stochastic
-
-def stochasticK( hi, lo, cl, st, en ):
-	minLow = lo[st]
-	maxHigh = hi[st]
-	for i in range( st+1, en+1 ):
-		if lo[i] < minLow:
-			minLow = lo[i]
-		if hi[i] > maxHigh:
-			maxHigh = hi[i]
-	difference = maxHigh - minLow
-	if not ( difference > 0 ):
-		return None
-
-	return (cl[st] - minLow) * 100.0 / difference
-# end of stochasticK
-
 	
 # ROC - Rate Of Change indicator
 def roc( period=12, shift=0, rates=None ):
@@ -441,10 +416,51 @@ def sma( period=10, shift=0, rates=None ):
 	lenRates = len(rates)
 	endIndex = shift + period
 	if endIndex > lenRates:
-		endIndex = lenRates
+		return None
 
 	return np.mean( rates[shift:endIndex] )	
 # end of sma
+
+
+# Stochastic (FSI) - Stochastic Oscillator
+def stochastic( period=14, periodD=3, smoothing=1, shift=0, hi=None, lo=None, cl=None ):
+	(hi, lo, cl) = _defineRates( hi=hi, lo=lo, cl=cl )
+	if hi is None or lo is None or cl is None:
+		return None
+
+	ratesLen = len(cl)
+	if shift + period + periodD - 1 >= ratesLen:
+		if shift + period - 1 >= ratesLen: # The 'K' value is also impossible to calculate?
+			return None
+		valueK = stochasticK( hi, lo, cl, shift, shift + period - 1 ) # Calculating the 'K' value only
+		if valueK is None:
+			return None
+		return( { 'k':valueK, 'd':None } )
+
+	valuesK = np.empty( shape=periodD, dtype='float' )
+	for i in range( periodD ):
+		valueK = stochasticK( hi, lo, cl, shift+i, shift + i + period - 1 )
+		if valueK is None:
+			return None
+		valuesK[i] = valueK
+
+	return( { 'k': valuesK[0], 'd': np.mean( valuesK ) } )
+# end of stochastic
+
+def stochasticK( hi, lo, cl, st, en ):
+	minLow = lo[st]
+	maxHigh = hi[st]
+	for i in range( st+1, en+1 ):
+		if lo[i] < minLow:
+			minLow = lo[i]
+		if hi[i] > maxHigh:
+			maxHigh = hi[i]
+	difference = maxHigh - minLow
+	if not ( difference > 0 ):
+		return None
+
+	return (cl[st] - minLow) * 100.0 / difference
+# end of stochasticK
 
 
 def williams( period=14, shift=0, hi=None, lo=None, cl=None ):
