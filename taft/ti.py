@@ -1,10 +1,5 @@
 import numpy as np
 
-from data import _open 
-from data import _close
-from data import _high
-from data import _low
-from data import _volumes
 from data import _defineRates
 
 # AD-indicator
